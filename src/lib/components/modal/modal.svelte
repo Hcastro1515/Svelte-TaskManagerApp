@@ -68,7 +68,7 @@
 			on:click={close}
 		/>
 
-		<div class="z-10 max-w-md p-6 rounded-md bg-white overflow-hidden">
+		<div class="z-10 p-6 rounded-md bg-white overflow-hidden">
 			<slot name="header" {store} />
 
 			<div class="max-h-md">

@@ -1,9 +1,9 @@
-<script lang="ts">	
+<script lang="ts">
 	import Modal from '$lib/components/modal/modal.svelte';
 	import type { Todo } from '$lib/models/Todo';
+	import axios from 'axios';
 
 	import { onMount } from 'svelte';
-	import { fade, fly } from 'svelte/transition';
 
 	export let data;
 	let tasks: Todo[] = [];
@@ -13,7 +13,17 @@
 			tasks = data.tasks;
 		}
 		localStorage.setItem('tasks', JSON.stringify(tasks));
-	});	
+	});
+
+	let taskSelected: boolean = false;
+	let currentTask: Todo;
+
+	function handleSelectTaskChange(task: Todo) {
+		currentTask = task;
+		taskSelected = !taskSelected;
+	}
+
+	const markTaskComplete = async (taskId: number) => {};
 </script>
 
 <div class="w-1/2">
@@ -29,35 +39,33 @@
 				</button>
 			</div>
 			<div slot="header">
-				<p class="text-2xl">Create a taski</p>
+				<p>Create a taski</p>
 			</div>
 			<div class="my-4" slot="content" let:store>
 				<form action="?/addTask" method="POST">
-					<div class="flex flex-col space-y-2 my-3">
-						<label for="title">Title</label>
+					<div class="form-control w-full">
+						<label class="label-text" for="title">Title</label>
 						<input
 							required
-							class="ring-2 ring-slate-800 p-2 rounded-md hover:ring-3 hover:ring-black focus:outline-2 focus:outline-black"
+							class="input input-bordered w-full"
 							type="text"
 							name="title"
 							id="title"
 							placeholder="Examples: buy groceries..."
 						/>
 					</div>
-					<div class="flex flex-col space-y-2">
-						<label for="description">Description</label>
+					<div class="form-control w-full">
+						<label for="description" class="label-text">Description</label>
 						<textarea
 							required
-							class="ring-2 ring-slate-800 p-2 rounded-md hover:ring-3 hover:ring-black focus:outline-2 focus:outline-black"
+							class="textarea textarea-bordered"
 							name="description"
-							cols="30"
-							rows="4"
 							placeholder="Milk, Chips, Beer, Water, Fruits...."
 						/>
 					</div>
 					<div class="flex flex-col justify-start space-y-2">
 						<label for="status">Have you completed this task?</label>
-						<input type="checkbox" name="status" />
+						<input type="checkbox" name="status" class="toggle toggle-success" />
 					</div>
 
 					<div class="mt-6">
@@ -71,70 +79,94 @@
 			</div>
 		</Modal>
 	</header>
-	{#if tasks.length > 0}
-		<section class="mt-10">
-			{#each tasks as task}
-				<div
-					in:fly={{ y: 200, duration: 1200 }}
-					out:fade
-					class="my-6 w-full flex justify-between py-2 px-3 shadow-md rounded-md bg-white text-black items-center"
+	<div class="overflow-x-auto mt-12">
+		{#if taskSelected}
+			<div class="alert">
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					fill="none"
+					viewBox="0 0 24 24"
+					class="stroke-info shrink-0 w-6 h-6"
+					><path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+					/></svg
 				>
-					<div>
-						<p class="font-bold">Title</p>
-						<p class="text-sm">
-							{task.title}
-						</p>
-					</div>
-					<div class="flex items-center">
-						<div class="flex-1">
-							<p>
-								Status
-								<br />
-								{#if task.status}
-									<p class="text-green-600">completed</p>
-								{:else}
-									<p class="text-red-500">Not completed</p>
-								{/if}
-							</p>
-						</div>
-						<Modal>
-							<div slot="trigger" let:open>
-								<button
-									on:click={open}
-									class="ml-5 bg-black text-white py-1 px-2 rounded-md hover:bg-slate-600 transition-all"
-								>
-									Details
-								</button>
-							</div>
-							<div slot="header">
-								<p class="text-2xl font-bold my-2">{task.title}</p>
-							</div>
-							<div slot="content">
-								{task.description}
-							</div>
-							<div slot="footer" let:close>
-								{task.status}
-								<button
-									on:click={close}
-									class="w-full bg-black text-white rounded-md py-1 px-2 hover:bg-opacity-80 transition-all"
-								>
-									close
-								</button>
-							</div>
-						</Modal>
-						<form action="?/deleteTask" method="POST">
-							<input type="hidden" name="id" value={task.id} />
-							<button class="text-red-700 material-symbols-outlined">delete</button>
-						</form>
-					</div>
+				<span>Woud you like to remove this task?</span>
+				<div class="flex items-center space-x-4">
+					<form action="?/deleteTask" method="POST">
+						<input type="hidden" name="id" value={currentTask.id} />
+						<button class="btn btn-sm btn-success text-white" formaction="?/updateStatus"
+							>complete</button
+						>
+						<button class="btn btn-sm btn-error text-white">Delete</button>
+					</form>
 				</div>
-			{/each}
-		</section>
-	{/if}
+			</div>
+		{/if}
+		<table class="table table-zebra">
+			<thead>
+				<tr>
+					<th />
+					<th>Id</th>
+					<th>Task</th>
+					<th>Description</th>
+					<th>Status</th>
+					<th />
+				</tr>
+			</thead>
+			<tbody>
+				{#if tasks.length > 0}
+					{#each tasks as task, idx}
+						<tr>
+							<th>
+								<label>
+									<input
+										type="checkbox"
+										class="checkbox"
+										on:change={() => handleSelectTaskChange(task)}
+									/>
+								</label>
+							</th>
+							<th>{++idx}</th>
+							<td>{task.title}</td>
+							<td>{task.description}</td>
+							<td>
+								{#if task.status}
+									<span>completed</span>
+								{:else}
+									<span>Not completed</span>
+								{/if}
+							</td>
+							<td>
+								<Modal>
+									<div slot="trigger" let:open>
+										<button class="btn btn-ghost btn-xs" on:click={open}>details</button>
+									</div>
+									<div slot="header">
+										<h2 class="card-title">{task.title}</h2>
+									</div>
+									<div class="my-4" slot="content">
+										<p>{task.description}</p>
+									</div>
+									<div class="" slot="footer">
+										<button class="btn btn-ghost btn-outline w-full">Update Details</button>
+									</div>
+								</Modal>
+							</td>
+						</tr>
+					{/each}
+				{/if}
+			</tbody>
+		</table>
+		{#if tasks.length <= 0}
+			<div class="w-full h-full grid place-items-center">
+				<figure>
+					<img src="/placeholder.png" alt="placeholder image" />
+				</figure>
+			</div>
+		{/if}
+	</div>
 </div>
-
-<style>
-	.material-symbols-outlined {
-		font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 48;
-	}
-</style>

@@ -5,8 +5,11 @@ const config = {
 	theme: {
 		extend: {}
 	},
+	daisyui: {
+		themes: ['light', 'dark', 'cupcake']
+	},
 
-	plugins: []
+	plugins: [require('daisyui')]
 };
 
 module.exports = config;

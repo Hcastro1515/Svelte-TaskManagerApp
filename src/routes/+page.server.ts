@@ -49,5 +49,17 @@ export const actions = {
 		} catch (error) {
 			console.error('There was an issue deleting the item');
 		}
+	},
+
+	updateStatus: async ({request}) => {
+		try {
+			const formData = await request.formData()
+			const id = formData.get("id")
+
+			await axios.put(`https://daisyui.com/components/toggle/${id}`)
+		} catch (error) {
+			
+		}
 	}
+	
 } satisfies Actions;
